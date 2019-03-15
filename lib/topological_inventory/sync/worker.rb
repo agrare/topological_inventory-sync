@@ -7,11 +7,11 @@ module TopologicalInventory
     class Worker
       include Logging
 
-      def initialize(messaging_host, messaging_port, queue_name)
-        self.faktory_client   = Faktory::Client.new
-        self.messaging_host   = messaging_host
-        self.messaging_port   = messaging_port
-        self.queue_name       = queue_name
+      def initialize(faktory_url, messaging_host, messaging_port, queue_name)
+        self.faktory_client = Faktory::Client.new(:url => faktory_url)
+        self.messaging_host = messaging_host
+        self.messaging_port = messaging_port
+        self.queue_name     = queue_name
       end
 
       def run
@@ -31,6 +31,8 @@ module TopologicalInventory
       attr_accessor :faktory_client, :messaging_host, :messaging_port, :queue_name
 
       def process_message(message)
+        logger.info("Received event [#{message.message}] on [#{queue_name}]...")
+
         faktory_client.push(
           "jid"     => SecureRandom.hex(12),
           "queue"   => "default",

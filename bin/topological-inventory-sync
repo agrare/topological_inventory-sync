@@ -15,6 +15,8 @@ def parse_args
         :default => ENV["QUEUE_HOST"] || "localhost"
     opt :queue_port, "Port of the Platform's kafka queue", :type => :int, :required => false,
         :default => (ENV["QUEUE_PORT"] || 9092).to_i
+    opt :faktory_url, "URL of the faktory server", :type => :string,
+        :default => ENV["FAKTORY_URL"] || "tcp://localhost:7419"
     opt :queues, "Comma separated list of topics to watch", :type => :string, :required => true
   end
 
@@ -24,6 +26,6 @@ end
 args = parse_args
 
 topological_inventory_sync = TopologicalInventory::Sync.new(
-  args[:queue_host], args[:queue_port], args[:queues].split(/\s*,\s*/)
+  args[:faktory_url], args[:queue_host], args[:queue_port], args[:queues].split(/\s*,\s*/)
 )
 topological_inventory_sync.run
