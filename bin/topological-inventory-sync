@@ -1,0 +1,29 @@
+#!/usr/bin/env ruby
+
+lib = File.expand_path("../../lib", __FILE__)
+$LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
+
+STDOUT.sync = true
+
+require "bundler/setup"
+require "topological_inventory/sync"
+
+def parse_args
+  require 'optimist'
+  opts = Optimist.options do
+    opt :queue_host, "Hostname of the Platform's kafka queue", :type => :string,
+        :default => ENV["QUEUE_HOST"] || "localhost"
+    opt :queue_port, "Port of the Platform's kafka queue", :type => :int, :required => false,
+        :default => (ENV["QUEUE_PORT"] || 9092).to_i
+    opt :queues, "Comma separated list of topics to watch", :type => :string, :required => true
+  end
+
+  opts
+end
+
+args = parse_args
+
+topological_inventory_sync = TopologicalInventory::Sync.new(
+  args[:queue_host], args[:queue_port], args[:queues].split(/\s*,\s*/)
+)
+topological_inventory_sync.run
