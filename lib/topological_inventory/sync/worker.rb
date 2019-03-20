@@ -35,10 +35,9 @@ module TopologicalInventory
 
         faktory_client.push(
           "jid"     => SecureRandom.hex(12),
-          "queue"   => "default",
-          "jobtype" => queue_name,
+          "queue"   => queue_name,
+          "jobtype" => message.message,
           "args"    => [
-            message.message,
             message.payload
           ]
         )
