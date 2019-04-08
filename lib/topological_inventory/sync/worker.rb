@@ -17,7 +17,7 @@ module TopologicalInventory
         initial_sync
 
         messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
-        messaging_client.subscribe_topic(subscribe_opts) { |message| process_message(message) }
+        messaging_client.subscribe_topic(subscribe_opts) { |message| perform(message) }
       ensure
         messaging_client&.close
       end
@@ -32,7 +32,7 @@ module TopologicalInventory
         # that was missed while shutdown
       end
 
-      def process_message(message)
+      def perform(message)
         raise NotImplementedError, "#{__method__} must be implemented in a subclass"
       end
 

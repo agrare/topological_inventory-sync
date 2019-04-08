@@ -37,7 +37,7 @@ module TopologicalInventory
         end
       end
 
-      def process_message(message)
+      def perform(message)
         jobtype, args = work.values_at("jobtype", "args")
         logger.info("#{jobtype}: #{args}")
 
