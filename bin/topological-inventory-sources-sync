@@ -13,9 +13,10 @@ def parse_args
   opts = Optimist.options do
     opt :queue_host, "Hostname of the Platform's kafka queue", :type => :string,
         :default => ENV["QUEUE_HOST"] || "localhost"
-    opt :queue_port, "Port of the Platform's kafka queue", :type => :int, :required => false,
-        :default => (ENV["QUEUE_PORT"] || 9092).to_i
-    opt :sources_api, "URL of the sources service api",        :type => :string, :default => ENV["SOURCES_API"] || "http://localhost:3000/api/v0.1"
+    opt :queue_port, "Port of the Platform's kafka queue", :type => :int,
+        :default => (ENV["QUEUE_PORT"] || 9092).to_i, :required => false
+    opt :sources_api, "URL of the sources service api", :type => :string,
+        :default => ENV["SOURCES_API"] || "http://localhost:3000/api/v0.1"
   end
 
   opts
@@ -37,5 +38,5 @@ SourcesApiClient.configure do |config|
   config.logger    = TopologicalInventory::Core.logger
 end
 
-topological_inventory_sync = TopologicalInventory::Sync.new(args[:queue_host], args[:queue_port])
+topological_inventory_sync = TopologicalInventory::Sync::SourcesSyncWorker.new(args[:queue_host], args[:queue_port])
 topological_inventory_sync.run
