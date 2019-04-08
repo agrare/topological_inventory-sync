@@ -7,6 +7,8 @@
 /spec/reports/
 /tmp/
 /Gemfile.lock
+/bundler.d/
+/config/database.yml
 
 # rspec failure tracking
 .rspec_status

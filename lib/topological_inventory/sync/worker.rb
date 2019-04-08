@@ -14,6 +14,8 @@ module TopologicalInventory
       def run
         logger.info("Starting Topological Inventory Sync Worker for #{queue_name}...")
 
+        initial_sync
+
         messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
         messaging_client.subscribe_topic(subscribe_opts) { |message| process_message(message) }
       ensure
@@ -23,6 +25,12 @@ module TopologicalInventory
       private
 
       attr_accessor :messaging_host, :messaging_port, :queue_name
+
+      def initial_sync
+        # Override this in your subclass if there is any sync needed to be done
+        # prior to blocking on the queue topic for new work aka sync anything
+        # that was missed while shutdown
+      end
 
       def process_message(message)
         raise NotImplementedError, "#{__method__} must be implemented in a subclass"

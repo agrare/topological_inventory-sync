@@ -7,6 +7,8 @@ require "topological_inventory/sync/version"
 
 module TopologicalInventory
   class Sync
+    include Logging
+
     def initialize(messaging_host, messaging_port)
       self.messaging_host   = messaging_host
       self.messaging_port   = messaging_port
