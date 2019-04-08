@@ -12,7 +12,7 @@ gem "topological_inventory-core", :git => "https://github.com/agrare/topological
 
 group :development, :test do
   gem "rake"
-  gem "rspec"
+  gem "rspec-rails"
   gem "simplecov"
   gem "webmock"
 end
