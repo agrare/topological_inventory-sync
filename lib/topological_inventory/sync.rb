@@ -1,14 +1,16 @@
+require "active_support/core_ext/class/subclasses"
+
 require "topological_inventory/sync/logging"
+require "topological_inventory/sync/sources_sync_worker"
 require "topological_inventory/sync/worker"
 require "topological_inventory/sync/version"
 
 module TopologicalInventory
   class Sync
-    def initialize(faktory_url, messaging_host, messaging_port, messaging_queues)
-      self.faktory_url      = faktory_url
+    def initialize(messaging_host, messaging_port)
       self.messaging_host   = messaging_host
       self.messaging_port   = messaging_port
-      self.messaging_queues = messaging_queues
+      self.worker_classes   = Worker.subclasses
       self.threads          = {}
     end
 
@@ -21,21 +23,25 @@ module TopologicalInventory
 
     private
 
-    attr_accessor :faktory_url, :messaging_host, :messaging_port, :messaging_queues, :threads
+    attr_accessor :messaging_host, :messaging_port, :threads, :worker_classes
 
     def ensure_threads
-      messaging_queues.each { |queue_name| ensure_thread(queue_name) }
+      worker_classes.each { |worker_class| ensure_thread(worker_class) }
     end
 
-    def ensure_thread(queue_name)
-      return if threads[queue_name] && threads[queue_name].alive?
-      threads[queue_name] = start_thread(queue_name)
+    def ensure_thread(worker_class)
+      thread_id = worker_class.to_s
+      return if threads[thread_id] && threads[thread_id].alive?
+      threads[thread_id] = start_thread(worker_class)
     end
 
-    def start_thread(queue_name)
+    def start_thread(worker_class)
       Thread.new do
-        worker = Worker.new(faktory_url, messaging_host, messaging_port, queue_name)
+        worker = worker_class.new(messaging_host, messaging_port)
         worker.run
+      rescue => err
+        logger.error(err)
+        logger.error(err.backtrace.join("\n"))
       end
     end
   end

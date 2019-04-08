@@ -1,5 +1,4 @@
 require "manageiq-messaging"
-require "faktory"
 require "topological_inventory/sync/logging"
 
 module TopologicalInventory
@@ -7,11 +6,9 @@ module TopologicalInventory
     class Worker
       include Logging
 
-      def initialize(faktory_url, messaging_host, messaging_port, queue_name)
-        self.faktory_client = Faktory::Client.new(:url => faktory_url)
+      def initialize(messaging_host, messaging_port)
         self.messaging_host = messaging_host
         self.messaging_port = messaging_port
-        self.queue_name     = queue_name
       end
 
       def run
@@ -19,31 +16,24 @@ module TopologicalInventory
 
         messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
         messaging_client.subscribe_topic(subscribe_opts) { |message| process_message(message) }
-      rescue => err
-        logger.error(err.message)
-        logger.error(err.backtrace.join("\n"))
       ensure
         messaging_client&.close
       end
 
       private
 
-      attr_accessor :faktory_client, :messaging_host, :messaging_port, :queue_name
+      attr_accessor :messaging_host, :messaging_port, :queue_name
 
       def process_message(message)
-        logger.info("Received event [#{message.message}] on [#{queue_name}]...")
+        raise NotImplementedError, "#{__method__} must be implemented in a subclass"
+      end
 
-        faktory_client.push(
-          "jid"     => SecureRandom.hex(12),
-          "queue"   => queue_name,
-          "jobtype" => message.message,
-          "args"    => [
-            message.payload
-          ]
-        )
-      rescue => err
-        logger.error(err.message)
-        logger.error(err.backtrace.join("\n"))
+      def queue_name
+        raise NotImplementedError, "#{__method__} must be implemented in a subclass"
+      end
+
+      def persist_ref
+        raise NotImplementedError, "#{__method__} must be implemented in a subclass"
       end
 
       def messaging_client_opts
@@ -59,7 +49,7 @@ module TopologicalInventory
       def subscribe_opts
         {
           :service     => queue_name,
-          :persist_ref => "topological-inventory-sync"
+          :persist_ref => persist_ref
         }
       end
     end
