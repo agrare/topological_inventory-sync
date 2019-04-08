@@ -48,8 +48,9 @@ module TopologicalInventory
 
       def subscribe_opts
         {
-          :service     => queue_name,
-          :persist_ref => persist_ref
+          :persist_ref     => persist_ref,
+          :service         => queue_name,
+          :session_timeout => 60 #seconds
         }
       end
     end
