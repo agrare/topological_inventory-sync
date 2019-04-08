@@ -8,7 +8,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
     let(:sources_sync) do
       described_class.new("localhost", "9092")
     end
-    let(:work)            { {"jobtype" => event, "args" => [payload]} }
+    let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, event, payload, nil, nil) }
     let(:external_tenant) { SecureRandom.uuid }
     let(:payload) do
       {"name" => "AWS", "source_type_id" => "1", "tenant" => external_tenant, "uid" => SecureRandom.uuid, "id" => "1"}
@@ -18,7 +18,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
       let(:event) { "Source.create" }
       context "with no existing tenants" do
         it "creates a source and a new tenant" do
-          sources_sync.send(:perform, work)
+          sources_sync.send(:perform, message)
 
           expect(Source.count).to eq(1)
           expect(Source.first.uid).to eq(payload["uid"])
@@ -31,7 +31,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
         let(:tenant) { Tenant.find_or_create_by(:external_tenant => payload["external_tenant"]) }
 
         it "creates a source on an existing tenant" do
-          sources_sync.send(:perform, work)
+          sources_sync.send(:perform, message)
 
           expect(Source.count).to eq(1)
           expect(Source.first.uid).to eq(payload["uid"])
@@ -50,7 +50,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
       end
 
       it "deletes the source" do
-        sources_sync.send(:perform, work)
+        sources_sync.send(:perform, message)
         expect(Source.count).to eq(0)
       end
     end

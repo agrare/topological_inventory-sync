@@ -38,10 +38,10 @@ module TopologicalInventory
       end
 
       def perform(message)
-        jobtype, args = work.values_at("jobtype", "args")
-        logger.info("#{jobtype}: #{args}")
+        jobtype = message.message
+        payload = message.payload
 
-        payload = args.first
+        logger.info("#{jobtype}: #{payload}")
 
         case jobtype
         when "Source.create"
