@@ -31,6 +31,7 @@ module TopologicalInventory
           source = sources_by_uid[source_uid]
           tenant = tenants_by_external_tenant(source.tenant)
           Source.create!(
+            :id     => source.id,
             :tenant => tenant,
             :uid    => source_uid
           )
@@ -46,6 +47,7 @@ module TopologicalInventory
         case jobtype
         when "Source.create"
           Source.create!(
+            :id     => payload["id"],
             :uid    => payload["uid"],
             :tenant => tenants_by_external_tenant(payload["tenant"]),
           )
