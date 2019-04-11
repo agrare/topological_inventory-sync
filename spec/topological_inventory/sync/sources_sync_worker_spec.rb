@@ -28,7 +28,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
       end
 
       context "with an existing tenant" do
-        let(:tenant) { Tenant.find_or_create_by(:external_tenant => payload["external_tenant"]) }
+        let(:tenant) { Tenant.find_or_create_by(:external_tenant => external_tenant) }
 
         it "creates a source on an existing tenant" do
           sources_sync.send(:perform, message)
@@ -43,7 +43,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
 
     context "source destroy event" do
       let(:event) { "Source.destroy" }
-      let(:tenant) { Tenant.find_or_create_by(:external_tenant => payload["external_tenant"]) }
+      let(:tenant) { Tenant.find_or_create_by(:external_tenant => external_tenant) }
       let!(:source) { Source.create!(:tenant => tenant, :uid => payload["uid"]) }
       let(:payload) do
         {"name" => "AWS", "source_type_id" => "1", "tenant" => SecureRandom.uuid, "uid" => SecureRandom.uuid, "id" => "1"}
