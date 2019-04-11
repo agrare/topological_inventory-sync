@@ -1,4 +1,8 @@
+require "base64"
+require "json"
+require "rest-client"
 require "topological_inventory/sync/worker"
+require "uri"
 
 module TopologicalInventory
   class Sync
@@ -14,7 +18,9 @@ module TopologicalInventory
       end
 
       def initial_sync
-        sources_by_uid = sources_api_client.list_sources.data.index_by(&:uid)
+        sources_by_uid = tenants.flat_map do |tenant|
+          sources_api_client(tenant).list_sources.data
+        end.index_by(&:uid)
 
         current_source_uids  = sources_by_uid.keys
         previous_source_uids = Source.pluck(:uid)
@@ -61,8 +67,32 @@ module TopologicalInventory
         @tenants_by_external_tenant[external_tenant] ||= Tenant.find_or_create_by(:external_tenant => external_tenant)
       end
 
-      def sources_api_client
-        SourcesApiClient::DefaultApi.new
+      def sources_api_client(tenant = nil)
+        api_client = SourcesApiClient::ApiClient.new
+        api_client.default_headers.merge!(identity_headers(tenant)) if tenant
+        SourcesApiClient::DefaultApi.new(api_client)
+      end
+
+      def tenants
+        response = RestClient.get(internal_tenants_url, identity_headers("topological_inventory-sources_sync"))
+        JSON.parse(response).map { |tenant| tenant["external_tenant"] }
+      end
+
+      def internal_tenants_url
+        config = SourcesApiClient.configure
+        URI::HTTP.build(
+          :host   => config.host.split(":").first,
+          :port   => config.host.split(":").last,
+          :path   => "/internal/v0.1/tenants"
+        ).to_s
+      end
+
+      def identity_headers(tenant)
+        {
+          "x-rh-identity" => Base64.strict_encode64(
+            JSON.dump({"identity" => {"account_number" => tenant}})
+          )
+        }
       end
     end
   end
