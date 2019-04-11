@@ -21,7 +21,11 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
           sources_sync.send(:perform, message)
 
           expect(Source.count).to eq(1)
-          expect(Source.first.uid).to eq(payload["uid"])
+
+          source = Source.first
+          expect(source.uid).to eq(payload["uid"])
+          expect(source.id).to  eq(payload["id"].to_i)
+
           expect(Tenant.count).to eq(1)
           expect(Tenant.first.external_tenant).to eq(payload["tenant"])
         end
@@ -34,7 +38,11 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
           sources_sync.send(:perform, message)
 
           expect(Source.count).to eq(1)
-          expect(Source.first.uid).to eq(payload["uid"])
+
+          source = Source.first
+          expect(source.uid).to eq(payload["uid"])
+          expect(source.id).to  eq(payload["id"].to_i)
+
           expect(Tenant.count).to eq(1)
           expect(Tenant.first.external_tenant).to eq(payload["tenant"])
         end
