@@ -34,4 +34,4 @@ RUN chgrp -R 0 $WORKDIR && \
     chmod -R g=u $WORKDIR
 
 ENTRYPOINT ["entrypoint"]
-CMD ["run_sync"]
+CMD ["run_sources_sync"]
