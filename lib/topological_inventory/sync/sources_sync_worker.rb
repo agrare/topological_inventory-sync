@@ -83,7 +83,7 @@ module TopologicalInventory
         URI::HTTP.build(
           :host   => config.host.split(":").first,
           :port   => config.host.split(":").last,
-          :path   => "/internal/v0.1/tenants"
+          :path   => "/internal/v1.0/tenants"
         ).to_s
       end
 
