@@ -8,7 +8,7 @@ gem "manageiq-messaging"
 gem "optimist"
 
 gem "sources-api-client",         :git => "https://github.com/ManageIQ/sources-api-client-ruby", :branch => "master"
-gem "topological_inventory-core", :git => "https://github.com/agrare/topological_inventory-core", :branch => "extract_sources_service"
+gem "topological_inventory-core", :git => "https://github.com/ManageIQ/topological_inventory-core", :branch => "master"
 
 group :development, :test do
   gem "rake"
