@@ -15,18 +15,26 @@ module TopologicalInventory
       end
 
       def perform(message)
-        jobtype = message.message
         payload = JSON.parse(message.payload)
 
-        logger.info("#{jobtype}: #{payload}")
+        logger.info("#{payload}")
 
-        payload["validation"] = "success"
+        validation = valid_payload?(payload) ? "success" : "failure"
+
+        payload["validation"] = validation
 
         messaging_client.publish_topic(
           :service => "platform.upload.validation",
           :event   => "", # TODO we shouldn't require this in MIQ-Messaging
           :payload => payload.to_json
         )
+      end
+
+      private
+
+      def valid_payload?(_payload)
+        # TODO validate that this is a correct topological inventory payload
+        true
       end
     end
   end
