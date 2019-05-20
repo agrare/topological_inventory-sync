@@ -12,9 +12,9 @@ def parse_args
   require 'optimist'
   opts = Optimist.options do
     opt :queue_host, "Hostname of the Platform's kafka queue", :type => :string,
-        :default => ENV["QUEUE_HOST"] || "localhost"
+        :default => ENV.fetch("QUEUE_HOST", "localhost")
     opt :queue_port, "Port of the Platform's kafka queue", :type => :int,
-        :default => (ENV["QUEUE_PORT"] || 9092).to_i, :required => false
+        :default => (ENV.fetch("QUEUE_PORT", 9092)).to_i, :required => false
   end
 
   opts
