@@ -7,8 +7,9 @@ module TopologicalInventory
       include Logging
 
       def initialize(messaging_host, messaging_port)
-        self.messaging_host = messaging_host
-        self.messaging_port = messaging_port
+        self.messaging_client = nil
+        self.messaging_host   = messaging_host
+        self.messaging_port   = messaging_port
       end
 
       def run
@@ -16,7 +17,7 @@ module TopologicalInventory
 
         initial_sync
 
-        messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
+        self.messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
         messaging_client.subscribe_topic(subscribe_opts) { |message| perform(message) }
       ensure
         messaging_client&.close
@@ -24,7 +25,7 @@ module TopologicalInventory
 
       private
 
-      attr_accessor :messaging_host, :messaging_port, :queue_name
+      attr_accessor :messaging_client, :messaging_host, :messaging_port, :queue_name
 
       def initial_sync
         # Override this in your subclass if there is any sync needed to be done
