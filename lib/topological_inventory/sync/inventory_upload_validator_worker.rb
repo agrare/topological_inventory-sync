@@ -32,9 +32,15 @@ module TopologicalInventory
 
       private
 
-      def valid_payload?(_payload)
-        # TODO validate that this is a correct topological inventory payload
-        true
+      def valid_payload?(payload)
+        schema_name = payload.dig("metadata", "schema", "name")
+        schema_klass = schema_klass_name(schema_name).safe_constantize
+
+        schema_klass.present?
+      end
+
+      def schema_klass_name(name)
+        "TopologicalInventory::Schema::#{name}"
       end
     end
   end
