@@ -19,9 +19,15 @@ module TopologicalInventory
 
         logger.info("#{payload}")
 
-        validation = valid_payload?(payload) ? "success" : "failure"
+        inventory = nil
+        open_url(payload["url"]) do |io|
+          untargz(io) do |file|
+            require "json/stream"
+            inventory = JSON::Stream::Parser.parse(file)
+          end
+        end
 
-        payload["validation"] = validation
+        payload["validation"] = valid_payload?(inventory) ? "success" : "failure"
 
         messaging_client.publish_topic(
           :service => "platform.upload.validation",
@@ -33,14 +39,35 @@ module TopologicalInventory
       private
 
       def valid_payload?(payload)
-        schema_name = payload.dig("metadata", "schema", "name")
-        schema_klass = schema_klass_name(schema_name).safe_constantize
-
+        schema_klass = schema_klass_name(payload.dig("schema", "name")).safe_constantize
         schema_klass.present?
       end
 
       def schema_klass_name(name)
         "TopologicalInventory::Schema::#{name}"
+      end
+
+      def open_url(url)
+        require "http"
+
+        uri = URI(url)
+        if uri.scheme.nil?
+          File.open(url) { |f| yield f }
+        else
+          response = HTTP.get(uri)
+          response.body.stream!
+          yield response.body
+        end
+      end
+
+      def untargz(io)
+        require "rubygems/package"
+
+        Zlib::GzipReader.wrap(io) do |gz|
+          Gem::Package::TarReader.new(gz) do |tar|
+            tar.each { |entry| yield entry }
+          end
+        end
       end
     end
   end
