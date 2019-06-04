@@ -13,7 +13,10 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ValidatorWorker do
       \"url\":\"/tmp/upload/schema.tar.gz\"}"
     end
 
-    before { expect(validator).to receive(:parse_inventory_payload).and_return(inventory) }
+    before do
+      expect(TopologicalInventory::Sync::InventoryUpload::Parser)
+        .to receive(:parse_inventory_payload).and_return(inventory)
+    end
 
     context "with a valid inventory payload" do
       let(:inventory) do

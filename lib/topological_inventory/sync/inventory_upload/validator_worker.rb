@@ -1,5 +1,6 @@
 require "json"
 require "topological_inventory/sync/worker"
+require "topological_inventory/sync/inventory_upload/parser"
 
 module TopologicalInventory
   class Sync
@@ -20,7 +21,7 @@ module TopologicalInventory
 
           logger.info("#{payload}")
 
-          inventory = parse_inventory_payload(payload["url"])
+          inventory = Parser.parse_inventory_payload(payload["url"])
           payload["validation"] = valid_payload?(inventory) ? "success" : "failure"
 
           publish_validation(payload)
@@ -37,37 +38,6 @@ module TopologicalInventory
 
         def schema_klass_name(name)
           "TopologicalInventory::Schema::#{name}"
-        end
-
-        def open_url(url)
-          require "http"
-
-          uri = URI(url)
-          if uri.scheme.nil?
-            File.open(url) { |f| yield f }
-          else
-            response = HTTP.get(uri)
-            response.body.stream!
-            yield response.body
-          end
-        end
-
-        def untargz(io)
-          require "rubygems/package"
-          Zlib::GzipReader.wrap(io) do |gz|
-            Gem::Package::TarReader.new(gz) do |tar|
-              tar.each { |entry| yield entry }
-            end
-          end
-        end
-
-        def parse_inventory_payload(url)
-          open_url(url) do |io|
-            untargz(io) do |file|
-              require "json/stream"
-              inventory = JSON::Stream::Parser.parse(file)
-            end
-          end
         end
 
         def publish_validation(payload)
