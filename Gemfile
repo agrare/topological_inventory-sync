@@ -4,6 +4,8 @@ plugin "bundler-inject", "~> 1.1"
 require File.join(Bundler::Plugin.index.load_paths("bundler-inject")[0], "bundler-inject") rescue nil
 
 gem "cloudwatchlogger", "~> 0.2"
+gem "http",             "~> 4.1.0", :require => false
+gem "json-stream",      "~> 0.2.0", :require => false
 gem "manageiq-loggers", "~> 0.3.0"
 gem "manageiq-messaging"
 gem "optimist"
