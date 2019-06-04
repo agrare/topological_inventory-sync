@@ -1,6 +1,6 @@
-require "topological_inventory/sync/inventory_upload_validator_worker"
+require "topological_inventory/sync/inventory_upload/validator_worker"
 
-RSpec.describe TopologicalInventory::Sync::InventoryUploadValidatorWorker do
+RSpec.describe TopologicalInventory::Sync::InventoryUpload::ValidatorWorker do
   context "#perform" do
     let(:validator) { described_class.new("localhost", "9092") }
     let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil) }
