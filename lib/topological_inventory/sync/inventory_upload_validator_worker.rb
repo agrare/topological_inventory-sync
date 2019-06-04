@@ -19,26 +19,17 @@ module TopologicalInventory
 
         logger.info("#{payload}")
 
-        inventory = nil
-        open_url(payload["url"]) do |io|
-          untargz(io) do |file|
-            require "json/stream"
-            inventory = JSON::Stream::Parser.parse(file)
-          end
-        end
-
+        inventory = parse_inventory_payload(payload["url"])
         payload["validation"] = valid_payload?(inventory) ? "success" : "failure"
 
-        messaging_client.publish_topic(
-          :service => "platform.upload.validation",
-          :event   => "", # TODO we shouldn't require this in MIQ-Messaging
-          :payload => payload.to_json
-        )
+        publish_validation(payload)
       end
 
       private
 
       def valid_payload?(payload)
+        require "topological_inventory/schema"
+
         schema_klass = schema_klass_name(payload.dig("schema", "name")).safe_constantize
         schema_klass.present?
       end
@@ -62,12 +53,28 @@ module TopologicalInventory
 
       def untargz(io)
         require "rubygems/package"
-
         Zlib::GzipReader.wrap(io) do |gz|
           Gem::Package::TarReader.new(gz) do |tar|
             tar.each { |entry| yield entry }
           end
         end
+      end
+
+      def parse_inventory_payload(url)
+        open_url(url) do |io|
+          untargz(io) do |file|
+            require "json/stream"
+            inventory = JSON::Stream::Parser.parse(file)
+          end
+        end
+      end
+
+      def publish_validation(payload)
+        messaging_client.publish_topic(
+          :service => "platform.upload.validation",
+          :event   => "", # TODO we shouldn't require this in MIQ-Messaging
+          :payload => payload.to_json
+        )
       end
     end
   end
