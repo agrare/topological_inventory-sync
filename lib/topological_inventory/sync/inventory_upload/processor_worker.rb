@@ -4,7 +4,7 @@ require "topological_inventory/sync/worker"
 module TopologicalInventory
   class Sync
     module InventoryUpload
-      ProcessorWorker < Worker
+      class ProcessorWorker < Worker
         include Logging
 
         def queue_name
