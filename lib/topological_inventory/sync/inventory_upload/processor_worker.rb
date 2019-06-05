@@ -19,7 +19,10 @@ module TopologicalInventory
           payload = JSON.parse(message.payload)
           return unless payload["service"] == "topological-inventory"
 
-          logger.info("#{payload}")
+          account, request_id, payload_id = payload.values_at("account", "request_id", "payload_id")
+          log_header = "account [#{account}] request_id [#{request_id}]"
+
+          logger.info("#{log_header}: Processing payload [#{payload_id}]...")
         end
       end
     end

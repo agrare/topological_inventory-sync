@@ -19,10 +19,15 @@ module TopologicalInventory
         def perform(message)
           payload = JSON.parse(message.payload)
 
-          logger.info("#{payload}")
+          account, request_id, payload_id = payload.values_at("account", "request_id", "payload_id")
+          log_header = "account [#{account}] request_id [#{request_id}]"
+
+          logger.info("#{log_header}: Validating payload [#{payload_id}]...")
 
           inventory = Parser.parse_inventory_payload(payload["url"])
           payload["validation"] = valid_payload?(inventory) ? "success" : "failure"
+
+          logger.info("#{log_header}: Validating payload [#{payload_id}]...Complete - #{payload["validation"]}")
 
           publish_validation(payload)
         end
