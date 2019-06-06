@@ -31,8 +31,8 @@ module TopologicalInventory
             require "http"
 
             uri = URI(url)
-            if uri.scheme.nil?
-              File.open(url) { |f| yield f }
+            if ["file", nil].include?(uri.scheme)
+              File.open(uri.path) { |f| yield f }
             else
               response = HTTP.get(uri)
               response.body.stream!
