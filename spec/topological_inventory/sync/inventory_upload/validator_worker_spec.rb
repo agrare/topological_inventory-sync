@@ -1,6 +1,6 @@
-require "topological_inventory/sync/inventory_upload_validator_worker"
+require "topological_inventory/sync/inventory_upload/validator_worker"
 
-RSpec.describe TopologicalInventory::Sync::InventoryUploadValidatorWorker do
+RSpec.describe TopologicalInventory::Sync::InventoryUpload::ValidatorWorker do
   context "#perform" do
     let(:validator) { described_class.new("localhost", "9092") }
     let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil) }
@@ -13,7 +13,10 @@ RSpec.describe TopologicalInventory::Sync::InventoryUploadValidatorWorker do
       \"url\":\"/tmp/upload/schema.tar.gz\"}"
     end
 
-    before { expect(validator).to receive(:parse_inventory_payload).and_return(inventory) }
+    before do
+      expect(TopologicalInventory::Sync::InventoryUpload::Parser)
+        .to receive(:open_url).and_yield(targz(inventory))
+    end
 
     context "with a valid inventory payload" do
       let(:inventory) do
@@ -35,6 +38,22 @@ RSpec.describe TopologicalInventory::Sync::InventoryUploadValidatorWorker do
         expect(validator).to receive(:publish_validation).with(hash_including("validation" => "failure"))
         validator.send(:perform, message)
       end
+    end
+
+    def targz(payload)
+      require "rubygems/package"
+
+      file = StringIO.new("", "w")
+      Zlib::GzipWriter.wrap(file) do |gz|
+        Gem::Package::TarWriter.new(gz) do |tar|
+          payload_json = payload.to_json
+          tar.add_file_simple("inventory.json", 0444, payload_json.length) do |io|
+            io.write(payload_json)
+          end
+        end
+      end
+
+      StringIO.new(file.string, "r")
     end
   end
 end

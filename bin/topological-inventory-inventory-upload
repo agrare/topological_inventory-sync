@@ -6,7 +6,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 STDOUT.sync = true
 
 require "bundler/setup"
-require "topological_inventory/sync/inventory_upload_worker"
+require "topological_inventory/sync/inventory_upload/processor_worker"
 
 def parse_args
   require 'optimist'
@@ -22,5 +22,5 @@ end
 
 args = parse_args
 
-topological_inventory_sync = TopologicalInventory::Sync::InventoryUploadWorker.new(args[:queue_host], args[:queue_port])
+topological_inventory_sync = TopologicalInventory::Sync::InventoryUpload::ProcessorWorker.new(args[:queue_host], args[:queue_port])
 topological_inventory_sync.run
