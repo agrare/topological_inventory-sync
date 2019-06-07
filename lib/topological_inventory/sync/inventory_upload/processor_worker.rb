@@ -1,7 +1,6 @@
 require "json"
 require "topological_inventory/sync/worker"
 require "topological_inventory/sync/inventory_upload/parser"
-require "pry-byebug"
 
 module TopologicalInventory
   class Sync
@@ -42,14 +41,13 @@ module TopologicalInventory
         def process_inventory(inventory, account)
           sources_api = sources_api_client(account)
 
-          # Find Source Type
           source_type = find_source_type(inventory['source_type'], sources_api)
-          # Create source with first payload
+
           find_or_create_source(sources_api, source_type.id, inventory['name'], inventory['source'])
         end
 
         def find_source_type(source_type_name, sources_api)
-          return if source_type_name.nil?
+          raise 'Missing Source Type name!' if source_type_name.blank?
 
           response = sources_api.list_source_types({:filter => {:name => source_type_name}})
           if response.data.blank?
@@ -67,17 +65,18 @@ module TopologicalInventory
 
           if sources.data.blank?
             source = SourcesApiClient::Source.new(:uid => source_uid, :name => source_name, :source_type_id => source_type_id)
-            source = sources_api.create_source(source)
+            source, status_code, _ = sources_api.create_source_with_http_info(source)
 
-            logger.info("Source #{source_name}(#{source_uid}) created successfully")
-            source
+            if status_code == 201
+              logger.info("Source #{source_name}(#{source_uid}) created successfully")
+              source
+            else
+              raise "Failed to create Source #{source_name} (#{source_uid})"
+            end
           else
-            logger.debug("Source #{source_name}(#{source_uid}) found")
+            logger.debug("Source #{source_name} (#{source_uid}) found")
             sources.data.first
           end
-        rescue => e
-          logger.error("Failed to get or create Source: #{source_uid} - #{e.message}")
-          raise
         end
       end
     end
