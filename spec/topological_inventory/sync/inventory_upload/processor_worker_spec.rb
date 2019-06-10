@@ -74,6 +74,44 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ProcessorWorker do
                                   inventory['source'])}.to raise_exception("Failed to create Source #{ocp_inventory['name']} (#{ocp_inventory['source']})")
         end
       end
+
+      context "sending to Ingress API" do
+        let(:ingress_api_sender) { double }
+        let(:total_parts) { 5 }
+        let(:source_type) { double }
+        let(:inventory) { ocp_inventory.merge('refresh_state_uuid' => '1',
+                                              'collections' => [{ 'name' => 'some_collection' }])}
+
+        before do
+          expect(TopologicalInventory::Sync::InventoryUpload::Parser)
+            .to receive(:open_url).and_yield(targz(inventory))
+
+          allow(ingress_api_sender).to receive(:save).and_return(total_parts)
+          allow(processor).to receive(:sources_api_client).and_return(double)
+          allow(processor).to receive(:find_source_type).and_return(source_type)
+          allow(source_type).to receive(:id).and_return(double)
+          allow(processor).to receive(:find_or_create_source).and_return(double)
+          allow(processor).to receive(:ingress_api_sender).and_return(ingress_api_sender)
+        end
+
+        it "sends inventory and mark&sweep metadata" do
+          expect(ingress_api_sender).to receive(:save).twice
+
+          processor.send(:perform, message)
+        end
+
+        it "sends received inventory" do
+          expect(ingress_api_sender).to receive(:save).with(hash_including(:inventory => inventory))
+
+          processor.send(:perform, message)
+        end
+
+        it "sends total parts inventory" do
+          expect(TopologicalInventoryIngressApiClient::Inventory).to receive(:new).with(hash_including(:total_parts => total_parts, :sweep_scope => %w[some_collection]))
+
+          processor.send(:perform, message)
+        end
+      end
     end
   end
 end

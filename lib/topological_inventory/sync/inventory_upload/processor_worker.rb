@@ -1,6 +1,7 @@
 require "json"
 require "topological_inventory/sync/worker"
 require "topological_inventory/sync/inventory_upload/parser"
+require "topological_inventory-ingress_api-client"
 
 module TopologicalInventory
   class Sync
@@ -88,7 +89,7 @@ module TopologicalInventory
         end
 
         def send_to_ingress_api(inventory)
-          logger.info("Send to Ingress API with :refresh_state_uuid => '#{refresh_state_uuid}'...")
+          logger.info("[START] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'...")
 
           sender = ingress_api_sender
 
@@ -99,6 +100,9 @@ module TopologicalInventory
           sender.save(
             :inventory => inventory_for_sweep(inventory, total_parts)
           )
+
+          logger.info("[COMPLETED] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'. Total parts: #{total_parts}")
+          total_parts
         end
 
         def inventory_for_sweep(inventory, total_parts)
