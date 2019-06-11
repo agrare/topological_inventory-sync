@@ -8,6 +8,10 @@ module TopologicalInventory
       class ValidatorWorker < Worker
         include Logging
 
+        def worker_name
+          "Topological Inventory Insights Upload Validator Worker"
+        end
+
         def queue_name
           "platform.upload.topological-inventory"
         end

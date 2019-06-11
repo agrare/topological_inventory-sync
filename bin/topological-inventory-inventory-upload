@@ -22,5 +22,12 @@ end
 
 args = parse_args
 
+require "sources-api-client"
+SourcesApiClient.configure do |config|
+  config.scheme = ENV["SOURCES_SCHEME"] || "http"
+  config.host   = "#{ENV["SOURCES_HOST"]}:#{ENV["SOURCES_PORT"]}"
+  config.logger = TopologicalInventory::Sync.logger
+end
+
 topological_inventory_sync = TopologicalInventory::Sync::InventoryUpload::ProcessorWorker.new(args[:queue_host], args[:queue_port])
 topological_inventory_sync.run
