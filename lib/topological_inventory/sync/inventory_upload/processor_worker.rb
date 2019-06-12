@@ -1,6 +1,7 @@
 require "json"
 require "topological_inventory/sync/worker"
 require "topological_inventory/sync/inventory_upload/parser"
+require "topological_inventory-ingress_api-client"
 
 module TopologicalInventory
   class Sync
@@ -44,6 +45,9 @@ module TopologicalInventory
           source_type = find_source_type(inventory['source_type'], sources_api)
 
           find_or_create_source(sources_api, source_type.id, inventory['name'], inventory['source'])
+
+          new_inventory = convert_to_topological_inventory_schema(inventory)
+          send_to_ingress_api(new_inventory)
         end
 
         def find_source_type(source_type_name, sources_api)
@@ -77,6 +81,51 @@ module TopologicalInventory
             logger.debug("Source #{source_name} (#{source_uid}) found")
             sources.data.first
           end
+        end
+
+        # TODO: Now it handles only "Default" schema
+        def convert_to_topological_inventory_schema(inventory)
+          inventory
+        end
+
+        def send_to_ingress_api(inventory)
+          logger.info("[START] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'...")
+
+          sender = ingress_api_sender
+
+          # Send data to ingress_api
+          total_parts = sender.save(:inventory => inventory)
+
+          # Send total parts sent to ingress_api
+          sender.save(
+            :inventory => inventory_for_sweep(inventory, total_parts)
+          )
+
+          logger.info("[COMPLETED] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'. Total parts: #{total_parts}")
+          total_parts
+        end
+
+        def inventory_for_sweep(inventory, total_parts)
+          TopologicalInventoryIngressApiClient::Inventory.new(
+            :name => inventory['name'],
+            :schema => TopologicalInventoryIngressApiClient::Schema.new(:name => inventory['schema']['name']),
+            :source => inventory['source'],
+            :collections => [],
+            :refresh_state_uuid => inventory['refresh_state_uuid'],
+            :total_parts => total_parts,
+            :sweep_scope => inventory['collections'].collect { |collection| collection['name'] }.compact
+          )
+        end
+
+        def ingress_api_client
+          TopologicalInventoryIngressApiClient::DefaultApi.new
+        end
+
+        def ingress_api_sender
+          TopologicalInventoryIngressApiClient::SaveInventory::Saver.new(
+            :client => ingress_api_client,
+            :logger => logger
+          )
         end
       end
     end
