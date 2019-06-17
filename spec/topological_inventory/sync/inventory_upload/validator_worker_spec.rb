@@ -6,7 +6,7 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ValidatorWorker do
 
   context "#perform" do
     let(:validator) { described_class.new("localhost", "9092") }
-    let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil) }
+    let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil, nil) }
     let(:request_id) { "52df9f748eabcfeb" }
     let(:file_path) { "/tmp/uploads/insights-upload-perm-test/#{request_id}" }
     let(:payload) do
