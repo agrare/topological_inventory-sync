@@ -10,7 +10,7 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ProcessorWorker do
     let(:processor) do
       described_class.new("localhost", "9092")
     end
-    let(:message) { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil) }
+    let(:message) { ManageIQ::Messaging::ReceivedMessage.new(nil, nil, payload, nil, nil, nil) }
     let(:request_id) { "52df9f748eabcfeb" }
     let(:file_path) { "/tmp/uploads/insights-upload-perm-test/#{request_id}" }
     let(:payload) { insights_upload_payload }
