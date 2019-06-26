@@ -34,6 +34,8 @@ module TopologicalInventory
           Parser.parse_inventory_payload(payload['url']) do |inventory|
             process_inventory(inventory, account)
           end
+
+          logger.info("#{log_header}: Processing payload [#{payload_id}]...Complete")
         end
 
         private
@@ -41,14 +43,55 @@ module TopologicalInventory
         # @param inventory [Hash]
         # @param account [String] account from x-rh-identity header
         def process_inventory(inventory, account)
+          send("process_#{payload_type(inventory)}_inventory", inventory, account)
+        end
+
+        def process_topology_inventory(inventory, account)
+          _source = process_source(account, inventory["source_type"], inventory["name"], inventory["source"])
+          send_to_ingress_api(inventory)
+        end
+
+        def process_cfme_inventory(inventory, account)
+          if inventory.key?("by_provider_type")
+            inventory["by_provider_type"].each do |type, payload|
+              process_cfme_provider_inventory(type, payload, account)
+            end
+          end
+        end
+
+        def process_cfme_provider_inventory(ems_type, payload, account)
+          source_type = ems_type_to_source_type(ems_type)
+          source_uid  = payload["guid"]
+          source_name = payload["name"]
+
+          _source = process_source(account, source_type, source_name, source_uid)
+        end
+
+        def ems_type_to_source_type(ems_type)
+          case ems_type
+          when "ManageIQ::Providers::OpenStack::CloudManager"
+            "openstack"
+          when "ManageIQ::Providers::Redhat::InfraManager"
+            "rhv"
+          when "ManageIQ::Providers::Vmware::InfraManager"
+            "vsphere"
+          else
+            raise "Invalid provider type #{ems_type}"
+          end
+        end
+
+        def process_source(account, source_type, source_name, source_uid)
           sources_api = sources_api_client(account)
+          source_type = find_source_type(source_type, sources_api)
 
-          source_type = find_source_type(inventory['source_type'], sources_api)
+          find_or_create_source(sources_api, source_type.id, source_name, source_uid)
+        end
 
-          find_or_create_source(sources_api, source_type.id, inventory['name'], inventory['source'])
+        def payload_type(inventory)
+          return "cfme"     unless (inventory.keys & %w[by_provider_type core]).empty?
+          return "topology" unless (inventory.keys & %w[schema source_type]).empty?
 
-          new_inventory = convert_to_topological_inventory_schema(inventory)
-          send_to_ingress_api(new_inventory)
+          raise "Invalid payload type"
         end
 
         def find_source_type(source_type_name, sources_api)
