@@ -20,7 +20,14 @@ module TopologicalInventory
         initial_sync
 
         self.messaging_client = ManageIQ::Messaging::Client.open(messaging_client_opts)
-        messaging_client.subscribe_topic(subscribe_opts) { |message| perform(message) }
+        messaging_client.subscribe_topic(subscribe_opts) do |message|
+          begin
+            perform(message)
+          rescue => err
+            logger.error(err)
+            logger.error(err.backtrace.join("\n"))
+          end
+        end
       ensure
         messaging_client&.close
       end
