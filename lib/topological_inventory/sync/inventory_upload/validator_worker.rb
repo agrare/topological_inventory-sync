@@ -28,8 +28,13 @@ module TopologicalInventory
 
           logger.info("#{log_header}: Validating payload [#{payload_id}]...")
 
-          inventory = Parser.parse_inventory_payload(payload["url"])
-          payload["validation"] = valid_payload?(inventory) ? "success" : "failure"
+          valid = "success"
+          Parser.parse_inventory_payload(payload["url"]) do |inventory|
+            # Return invalid if any of the payloads are invalid
+            valid = "failure" unless valid_payload?(inventory)
+          end
+
+          payload["validation"] = valid
 
           logger.info("#{log_header}: Validating payload [#{payload_id}]...Complete - #{payload["validation"]}")
 

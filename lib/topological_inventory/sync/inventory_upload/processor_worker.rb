@@ -31,9 +31,9 @@ module TopologicalInventory
 
           logger.info("#{log_header}: Processing payload [#{payload_id}]...")
 
-          inventory = TopologicalInventory::Sync::InventoryUpload::Parser.parse_inventory_payload(payload['url'])
-
-          process_inventory(inventory, account)
+          Parser.parse_inventory_payload(payload['url']) do |inventory|
+            process_inventory(inventory, account)
+          end
         end
 
         private
