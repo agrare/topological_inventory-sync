@@ -46,15 +46,15 @@ module TopologicalInventory
           send("process_#{payload_type(inventory)}_inventory", inventory, account)
         end
 
-        def process_topology_inventory(inventory, account)
+        def process_default_inventory(inventory, account)
           _source = process_source(account, inventory["source_type"], inventory["name"], inventory["source"])
           send_to_ingress_api(inventory)
         end
 
         def process_cfme_inventory(inventory, account)
-          if inventory.key?("by_provider_type")
-            inventory["by_provider_type"].each do |type, payload|
-              process_cfme_provider_inventory(type, payload, account)
+          cfme_ems_types.each do |ems_type|
+            inventory[ems_type].to_a.each do |payload|
+              process_cfme_provider_inventory(ems_type, payload, account)
             end
           end
         end
@@ -80,6 +80,14 @@ module TopologicalInventory
           end
         end
 
+        def cfme_ems_types
+          [
+            "ManageIQ::Providers::OpenStack::CloudManager",
+            "ManageIQ::Providers::Redhat::InfraManager",
+            "ManageIQ::Providers::Vmware::InfraManager"
+          ]
+        end
+
         def process_source(account, source_type, source_name, source_uid)
           sources_api = sources_api_client(account)
           source_type = find_source_type(source_type, sources_api)
@@ -88,10 +96,7 @@ module TopologicalInventory
         end
 
         def payload_type(inventory)
-          return "cfme"     unless (inventory.keys & %w[by_provider_type core]).empty?
-          return "topology" unless (inventory.keys & %w[schema source_type]).empty?
-
-          raise "Invalid payload type"
+          inventory.dig("schema", "name").downcase
         end
 
         def find_source_type(source_type_name, sources_api)
