@@ -54,7 +54,8 @@ module TopologicalInventory
         def process_cfme_inventory(inventory, account)
           cfme_ems_types.each do |ems_type|
             inventory[ems_type].to_a.each do |payload|
-              process_cfme_provider_inventory(ems_type, payload, account)
+              payload = process_cfme_provider_inventory(ems_type, payload, account)
+              send_to_ingress_api(payload)
             end
           end
         end
@@ -65,6 +66,34 @@ module TopologicalInventory
           source_name = payload["name"]
 
           _source = process_source(account, source_type, source_name, source_uid)
+
+          inventory = TopologicalInventoryIngressApiClient::Inventory.new(
+            :source             => source_uid,
+            :source_type        => source_type,
+            :name               => source_name,
+            :refresh_state_uuid => SecureRandom.uuid,
+            :collections        => [],
+          )
+
+          if payload["vms"].present?
+            vms_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "vms", :data => [])
+            payload["vms"].each do |vm_data|
+              vm = TopologicalInventoryIngressApiClient::Vm.new
+
+              vm.name = vm_data["name"]
+              vm.description = vm_data["description"]
+              vm.cpus        = vm_data["cpu_total_cores"]
+              vm.memory      = vm_data["ram_size_in_bytes"]
+              vm.source_ref  = vm_data["ems_ref"]
+              vm.uid_ems     = vm_data["uid_ems"]
+              vm.power_state = vm_data["power_state"]
+
+              vms_collection.data << vm
+            end
+            inventory.collections << vms_collection
+          end
+
+          inventory
         end
 
         def ems_type_to_source_type(ems_type)
