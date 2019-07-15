@@ -44,14 +44,22 @@ module TopologicalInventory
         private
 
         def valid_payload?(payload)
-          require "topological_inventory/schema"
+          supported_schema_types = %w[Default Cfme].freeze
 
-          schema_klass = schema_klass_name(payload.dig("schema", "name")).safe_constantize
-          schema_klass.present?
+          schema_type = payload.dig("schema", "name")
+          return false unless supported_schema_types.include?(schema_type)
+
+          send("valid_#{schema_type.downcase}_payload?", payload)
         end
 
-        def schema_klass_name(name)
-          "TopologicalInventory::Schema::#{name}"
+        def valid_cfme_payload?(payload)
+          # TODO: Add additional validation checks here
+          true
+        end
+
+        def valid_default_payload?(_)
+          # TODO: Add additional validation checks here
+          true
         end
 
         def publish_validation(payload)

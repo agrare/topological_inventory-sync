@@ -34,6 +34,8 @@ module TopologicalInventory
           Parser.parse_inventory_payload(payload['url']) do |inventory|
             process_inventory(inventory, account)
           end
+
+          logger.info("#{log_header}: Processing payload [#{payload_id}]...Complete")
         end
 
         private
@@ -41,14 +43,89 @@ module TopologicalInventory
         # @param inventory [Hash]
         # @param account [String] account from x-rh-identity header
         def process_inventory(inventory, account)
+          send("process_#{payload_type(inventory)}_inventory", inventory, account)
+        end
+
+        def process_default_inventory(inventory, account)
+          _source = process_source(account, inventory["source_type"], inventory["name"], inventory["source"])
+          send_to_ingress_api(inventory)
+        end
+
+        def process_cfme_inventory(inventory, account)
+          cfme_ems_types.each do |ems_type|
+            inventory[ems_type].to_a.each do |payload|
+              payload = process_cfme_provider_inventory(ems_type, payload, account)
+              send_to_ingress_api(payload)
+            end
+          end
+        end
+
+        def process_cfme_provider_inventory(ems_type, payload, account)
+          source_type = ems_type_to_source_type(ems_type)
+          source_uid  = payload["guid"]
+          source_name = payload["name"]
+
+          _source = process_source(account, source_type, source_name, source_uid)
+
+          inventory = TopologicalInventoryIngressApiClient::Inventory.new(
+            :source             => source_uid,
+            :source_type        => source_type,
+            :name               => source_name,
+            :refresh_state_uuid => SecureRandom.uuid,
+            :collections        => [],
+          )
+
+          if payload["vms"].present?
+            vms_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "vms", :data => [])
+            payload["vms"].each do |vm_data|
+              vm = TopologicalInventoryIngressApiClient::Vm.new
+
+              vm.name = vm_data["name"]
+              vm.description = vm_data["description"]
+              vm.cpus        = vm_data["cpu_total_cores"]
+              vm.memory      = vm_data["ram_size_in_bytes"]
+              vm.source_ref  = vm_data["ems_ref"]
+              vm.uid_ems     = vm_data["uid_ems"]
+              vm.power_state = vm_data["power_state"]
+
+              vms_collection.data << vm
+            end
+            inventory.collections << vms_collection
+          end
+
+          inventory
+        end
+
+        def ems_type_to_source_type(ems_type)
+          case ems_type
+          when "ManageIQ::Providers::OpenStack::CloudManager"
+            "openstack"
+          when "ManageIQ::Providers::Redhat::InfraManager"
+            "rhv"
+          when "ManageIQ::Providers::Vmware::InfraManager"
+            "vsphere"
+          else
+            raise "Invalid provider type #{ems_type}"
+          end
+        end
+
+        def cfme_ems_types
+          [
+            "ManageIQ::Providers::OpenStack::CloudManager",
+            "ManageIQ::Providers::Redhat::InfraManager",
+            "ManageIQ::Providers::Vmware::InfraManager"
+          ]
+        end
+
+        def process_source(account, source_type, source_name, source_uid)
           sources_api = sources_api_client(account)
+          source_type = find_source_type(source_type, sources_api)
 
-          source_type = find_source_type(inventory['source_type'], sources_api)
+          find_or_create_source(sources_api, source_type.id, source_name, source_uid)
+        end
 
-          find_or_create_source(sources_api, source_type.id, inventory['name'], inventory['source'])
-
-          new_inventory = convert_to_topological_inventory_schema(inventory)
-          send_to_ingress_api(new_inventory)
+        def payload_type(inventory)
+          inventory.dig("schema", "name").downcase
         end
 
         def find_source_type(source_type_name, sources_api)
