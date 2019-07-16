@@ -238,6 +238,65 @@
       "api_version": "6.7.1",
       "emstype_description": "VMware vCenter",
       "hostname": "dev-vc67.cloudforms.lab.eng.rdu2.redhat.com",
+      "ems_clusters": [
+        {
+          "id": 1,
+          "uid_ems": "domain-c109",
+          "ems_ref": "domain-c109",
+          "ha_enabled": false,
+          "drs_enabled": true,
+          "effective_cpu": 122271,
+          "effective_memory": 387353411584
+        }
+      ],
+      "hosts": [
+        {
+          "id": 1,
+          "name": "dell-r430-13.cloudforms.lab.eng.rdu2.redhat.com",
+          "type": "ManageIQ::Providers::Vmware::InfraManager::HostEsx",
+          "hostname": "dell-r430-13.cloudforms.lab.eng.rdu2.redhat.com",
+          "ipaddress": "10.8.96.48",
+          "power_state": "on",
+          "guid": "f753bb4f-36ad-4c46-9cb9-d6b99655b2f9",
+          "uid_ems": "dell-r430-13.cloudforms.lab.eng.rdu2.redhat.com",
+          "mac_address": null,
+          "maintenance": false,
+          "vmm_vendor": "vmware",
+          "vmm_version": "6.7.0",
+          "vmm_product": "ESXi",
+          "vmm_buildnumber": "10764712",
+          "archived": false,
+          "cpu_cores_per_socket": 10,
+          "cpu_total_cores": 20,
+          "ems_cluster_id": 1
+        }
+      ],
+      "storages": [
+        {
+          "id": 1,
+          "name": "NFS Share",
+          "location": "08e49cea-d9221d10",
+          "store_type": "NFS",
+          "total_space": 1044536049664,
+          "free_space": 908617875456,
+          "uncommitted": 4650814222336,
+          "storage_domain_type": null,
+          "host_storages": [
+            {
+              "ems_ref": "datastore-118",
+              "host_id": 1
+            },
+            {
+              "ems_ref": "datastore-118",
+              "host_id": 2
+            },
+            {
+              "ems_ref": "datastore-118",
+              "host_id": 3
+            }
+          ]
+        }
+      ],
       "vms": [
         {
           "id": 43,
