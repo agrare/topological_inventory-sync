@@ -69,12 +69,13 @@ module TopologicalInventory
           _source = process_source(account, source_type, source_name, source_uid)
 
           inventory = TopologicalInventoryIngressApiClient::Inventory.new(
-            :source             => source_uid,
-            :source_type        => source_type,
-            :schema             => TopologicalInventoryIngressApiClient::Schema.new(:name => "Default"),
-            :name               => source_name,
-            :refresh_state_uuid => SecureRandom.uuid,
-            :collections        => [],
+            :source                  => source_uid,
+            :source_type             => source_type,
+            :schema                  => TopologicalInventoryIngressApiClient::Schema.new(:name => "Default"),
+            :name                    => source_name,
+            :refresh_state_uuid      => SecureRandom.uuid,
+            :refresh_state_part_uuid => SecureRandom.uuid,
+            :collections             => [],
           )
 
           if payload["vms"].present?
