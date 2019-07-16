@@ -47,7 +47,8 @@ module TopologicalInventory
         end
 
         def process_default_inventory(inventory, account)
-          _source = process_source(account, inventory["source_type"], inventory["name"], inventory["source"])
+          inventory = TopologicalInventoryIngressApiClient::Inventory.new.build_from_hash(inventory.deep_symbolize_keys)
+          _source = process_source(account, inventory.source_type, inventory.name, inventory.source)
           send_to_ingress_api(inventory)
         end
 
@@ -70,6 +71,7 @@ module TopologicalInventory
           inventory = TopologicalInventoryIngressApiClient::Inventory.new(
             :source             => source_uid,
             :source_type        => source_type,
+            :schema             => TopologicalInventoryIngressApiClient::Schema.new(:name => "Default"),
             :name               => source_name,
             :refresh_state_uuid => SecureRandom.uuid,
             :collections        => [],
@@ -167,7 +169,7 @@ module TopologicalInventory
         end
 
         def send_to_ingress_api(inventory)
-          logger.info("[START] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'...")
+          logger.info("[START] Send to Ingress API with :refresh_state_uuid => '#{inventory.refresh_state_uuid}'...")
 
           sender = ingress_api_sender
 
@@ -179,19 +181,19 @@ module TopologicalInventory
             :inventory => inventory_for_sweep(inventory, total_parts)
           )
 
-          logger.info("[COMPLETED] Send to Ingress API with :refresh_state_uuid => '#{inventory['refresh_state_uuid']}'. Total parts: #{total_parts}")
+          logger.info("[COMPLETED] Send to Ingress API with :refresh_state_uuid => '#{inventory.refresh_state_uuid}'. Total parts: #{total_parts}")
           total_parts
         end
 
         def inventory_for_sweep(inventory, total_parts)
           TopologicalInventoryIngressApiClient::Inventory.new(
-            :name => inventory['name'],
-            :schema => TopologicalInventoryIngressApiClient::Schema.new(:name => inventory['schema']['name']),
-            :source => inventory['source'],
+            :name => inventory.name,
+            :schema => TopologicalInventoryIngressApiClient::Schema.new(:name => inventory.schema.name),
+            :source => inventory.source,
             :collections => [],
-            :refresh_state_uuid => inventory['refresh_state_uuid'],
+            :refresh_state_uuid => inventory.refresh_state_uuid,
             :total_parts => total_parts,
-            :sweep_scope => inventory['collections'].collect { |collection| collection['name'] }.compact
+            :sweep_scope => inventory.collections.collect { |collection| collection.name }.compact
           )
         end
 
