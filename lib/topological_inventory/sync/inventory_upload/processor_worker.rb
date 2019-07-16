@@ -78,20 +78,47 @@ module TopologicalInventory
             :collections             => [],
           )
 
+          if payload["ems_clusters"].present?
+            clusters_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "clusters", :data => [])
+            payload["ems_clusters"].each do |cluster_data|
+              clusters_collection.data << TopologicalInventoryIngressApiClient::Cluster.new(
+                :name       => cluster_data["name"],
+                :source_ref => cluster_data["ems_ref"],
+                :uid_ems    => cluster_data["uid_ems"],
+              )
+            end
+            inventory.collections << clusters_collection
+          end
+
+          if payload["hosts"].present?
+            hosts_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "hosts", :data => [])
+            payload["hosts"].each do |host_data|
+              hosts_collection.data << TopologicalInventoryIngressApiClient::Host.new(
+                :name        => host_data["name"],
+                :hostname    => host_data["hostname"],
+                :ipaddress   => host_data["ipaddress"],
+                :power_state => host_data["power_state"],
+                :uid_ems     => host_data["uid_ems"],
+                :source_ref  => host_data["ems_ref"],
+                :cpus        => host_data["cpu_total_cores"],
+                :memory      => host_data.dig("hardware", "memory_mb") * 1048576,
+              )
+            end
+            inventory.collections << hosts_collection
+          end
+
           if payload["vms"].present?
             vms_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "vms", :data => [])
             payload["vms"].each do |vm_data|
-              vm = TopologicalInventoryIngressApiClient::Vm.new
-
-              vm.name = vm_data["name"]
-              vm.description = vm_data["description"]
-              vm.cpus        = vm_data["cpu_total_cores"]
-              vm.memory      = vm_data["ram_size_in_bytes"]
-              vm.source_ref  = vm_data["ems_ref"]
-              vm.uid_ems     = vm_data["uid_ems"]
-              vm.power_state = vm_data["power_state"]
-
-              vms_collection.data << vm
+              vms_collection.data << TopologicalInventoryIngressApiClient::Vm.new(
+                :name        => vm_data["name"],
+                :description => vm_data["description"],
+                :cpus        => vm_data["cpu_total_cores"],
+                :memory      => vm_data["ram_size_in_bytes"],
+                :source_ref  => vm_data["ems_ref"],
+                :uid_ems     => vm_data["uid_ems"],
+                :power_state => vm_data["power_state"],
+              )
             end
             inventory.collections << vms_collection
           end
