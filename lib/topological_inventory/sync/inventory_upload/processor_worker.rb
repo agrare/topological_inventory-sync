@@ -93,6 +93,8 @@ module TopologicalInventory
           if payload["hosts"].present?
             hosts_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "hosts", :data => [])
             payload["hosts"].each do |host_data|
+              memory_mb = host_data.dig("hardware", "memory_mb")
+
               hosts_collection.data << TopologicalInventoryIngressApiClient::Host.new(
                 :name        => host_data["name"],
                 :hostname    => host_data["hostname"],
@@ -101,10 +103,32 @@ module TopologicalInventory
                 :uid_ems     => host_data["uid_ems"],
                 :source_ref  => host_data["ems_ref"],
                 :cpus        => host_data["cpu_total_cores"],
-                :memory      => host_data.dig("hardware", "memory_mb") * 1048576,
+                :memory      => memory_mb * 1048576,
               )
             end
             inventory.collections << hosts_collection
+          end
+
+          if payload["storages"].present?
+            datastores_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "datastores", :data => [])
+
+            payload["storages"].each do |storage_data|
+              datastore_data = {
+                :name        => storage_data["name"],
+                :location    => storage_data["location"],
+                :total_space => storage_data["total_space"],
+                :free_space  => storage_data["free_space"]
+              }
+
+              storage_ems_refs = storage_data["host_storages"].map { |hs| hs["ems_ref"] }.uniq
+              storage_ems_refs.each do |ems_ref|
+                datastores_collection.data << TopologicalInventoryIngressApiClient::Datastore.new(
+                  datastore_data.merge(:source_ref => ems_ref)
+                )
+              end
+            end
+
+            inventory.collections << datastores_collection
           end
 
           if payload["vms"].present?
