@@ -1,5 +1,6 @@
 require "rest-client"
 require "topological_inventory/sync/worker"
+require "manageiq-api-common"
 require "uri"
 
 module TopologicalInventory
@@ -20,9 +21,15 @@ module TopologicalInventory
       end
 
       def initial_sync
-        sources_by_uid = tenants.flat_map do |tenant|
-          sources_api_client(tenant).list_sources.data
-        end.index_by(&:uid)
+        sources_by_uid       = {}
+        tenant_by_source_uid = {}
+
+        tenants.each do |tenant|
+          sources_api_client(tenant).list_sources.data.each do |source|
+            sources_by_uid[source.uid]       = source
+            tenant_by_source_uid[source.uid] = tenant
+          end
+        end
 
         current_source_uids  = sources_by_uid.keys
         previous_source_uids = Source.pluck(:uid)
@@ -37,7 +44,8 @@ module TopologicalInventory
           logger.info("Creating source [#{source_uid}]")
 
           source = sources_by_uid[source_uid]
-          tenant = tenants_by_external_tenant(source.tenant)
+          tenant = tenants_by_external_tenant(tenant_by_source_uid[source_uid])
+
           Source.create!(
             :id     => source.id,
             :tenant => tenant,
@@ -52,12 +60,14 @@ module TopologicalInventory
 
         logger.info("#{jobtype}: #{payload}")
 
+        tenant = headers_to_account_number(message.headers)
+
         case jobtype
         when "Source.create"
           Source.create!(
             :id     => payload["id"],
             :uid    => payload["uid"],
-            :tenant => tenants_by_external_tenant(payload["tenant"]),
+            :tenant => tenants_by_external_tenant(tenant),
           )
         when "Source.destroy"
           Source.find_by(:uid => payload["uid"]).destroy
@@ -82,6 +92,10 @@ module TopologicalInventory
           :port   => config.host.split(":").last,
           :path   => "/internal/v1.0/tenants"
         ).to_s
+      end
+
+      def headers_to_account_number(headers)
+        ManageIQ::API::Common::Request.new(:headers => headers, :original_url => nil).identity.dig("identity", "account_number")
       end
     end
   end
