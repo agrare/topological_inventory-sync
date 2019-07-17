@@ -1,6 +1,5 @@
 require "rest-client"
 require "topological_inventory/sync/worker"
-require "manageiq-api-common"
 require "uri"
 
 module TopologicalInventory
@@ -95,7 +94,7 @@ module TopologicalInventory
       end
 
       def headers_to_account_number(headers)
-        ManageIQ::API::Common::Request.new(:headers => headers, :original_url => nil).identity.dig("identity", "account_number")
+        JSON.parse(Base64.decode64(headers["x-rh-identity"])).dig("identity", "account_number")
       end
     end
   end
