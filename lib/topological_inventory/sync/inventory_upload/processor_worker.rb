@@ -85,6 +85,12 @@ module TopologicalInventory
                 :name       => cluster_data["name"],
                 :source_ref => cluster_data["ems_ref"],
                 :uid_ems    => cluster_data["uid_ems"],
+                :extra      => {
+                  :ha_enabled       => cluster_data["ha_enabled"],
+                  :drs_enabled      => cluster_data["drs_enabled"],
+                  :effective_cpu    => cluster_data["effective_cpu"],
+                  :effective_memory => cluster_data["effective_memory"]
+                }
               )
             end
             inventory.collections << clusters_collection
@@ -109,7 +115,15 @@ module TopologicalInventory
                 :source_ref  => host_data["ems_ref"],
                 :cpus        => host_data["cpu_total_cores"],
                 :memory      => memory_mb * 1048576,
-                :cluster     => cluster
+                :cluster     => cluster,
+                :extra       => {
+                  :cpu_cores_per_socket => host_data["cpu_cores_per_socket"],
+                  :maintenance          => host_data["maintenance"],
+                  :vmm_vendor           => host_data["vmm_vendor"],
+                  :vmm_version          => host_data["vmm_version"],
+                  :vmm_product          => host_data["vmm_product"],
+                  :vmm_buildnumber      => host_data["vmm_buildnumber"],
+                }
               )
             end
 
@@ -125,7 +139,11 @@ module TopologicalInventory
                 :name        => storage_data["name"],
                 :location    => storage_data["location"],
                 :total_space => storage_data["total_space"],
-                :free_space  => storage_data["free_space"]
+                :free_space  => storage_data["free_space"],
+                :extra       => {
+                  :uncommitted         => storage_data["uncommitted"],
+                  :storage_domain_type => storage_data["storage_domain_type"]
+                }
               }
 
               storage_data["host_storages"].group_by { |hs| hs["ems_ref"] }.each do |ems_ref, host_storages|
@@ -170,6 +188,14 @@ module TopologicalInventory
                 :uid_ems     => vm_data["uid_ems"],
                 :power_state => vm_data["power_state"],
                 :host        => host,
+                :extra       => {
+                  :cpu_cores_per_socket => vm_data["cpu_cores_per_socket"],
+                  :disks_aligned        => vm_data["disks_aligned"],
+                  :has_rdm_disk         => vm_data["has_rdm_disk"],
+                  :linked_clone         => vm_data["linked_clone"],
+                  :retired              => vm_data["retired"],
+                  :v_datastore_path     => vm_data["v_datastore_path"],
+                }
               )
             end
             inventory.collections << vms_collection
