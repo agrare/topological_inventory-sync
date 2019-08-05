@@ -1,3 +1,6 @@
+require "topological_inventory/sync/inventory_upload/payload/cfme"
+require "topological_inventory/sync/inventory_upload/payload/default"
+
 module TopologicalInventory
   class Sync
     module InventoryUpload
