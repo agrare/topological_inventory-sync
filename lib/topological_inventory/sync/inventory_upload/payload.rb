@@ -1,9 +1,9 @@
 module TopologicalInventory
   class Sync
     module InventoryUpload
-      class Parser
+      class Payload
         class << self
-          def parse_inventory_payload(url)
+          def unpack(url)
             open_url(url) do |io|
               untargz(io) do |file|
                 require "json/stream"

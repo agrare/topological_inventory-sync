@@ -18,7 +18,7 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ProcessorWorker do
 
     context "with missing Source Type" do
       before do
-        expect(TopologicalInventory::Sync::InventoryUpload::Parser)
+        expect(TopologicalInventory::Sync::InventoryUpload::Payload)
           .to receive(:open_url).and_yield(targz(inventory))
 
         source_type_collection = double
@@ -83,7 +83,7 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::ProcessorWorker do
                                               'collections' => [{ 'name' => 'some_collection' }])}
 
         before do
-          expect(TopologicalInventory::Sync::InventoryUpload::Parser)
+          expect(TopologicalInventory::Sync::InventoryUpload::Payload)
             .to receive(:open_url).and_yield(targz(inventory))
 
           allow(ingress_api_sender).to receive(:save).and_return(total_parts)

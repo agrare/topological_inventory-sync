@@ -1,6 +1,6 @@
 require "json"
 require "topological_inventory/sync/worker"
-require "topological_inventory/sync/inventory_upload/parser"
+require "topological_inventory/sync/inventory_upload/payload"
 require "topological_inventory-ingress_api-client"
 require "topological_inventory-ingress_api-client/save_inventory/saver"
 
@@ -31,7 +31,7 @@ module TopologicalInventory
 
           logger.info("#{log_header}: Processing payload [#{payload_id}]...")
 
-          Parser.parse_inventory_payload(payload['url']) do |inventory|
+          Payload.unpack(payload['url']) do |inventory|
             process_inventory(inventory, account)
           end
 
