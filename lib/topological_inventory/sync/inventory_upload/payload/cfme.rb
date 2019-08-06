@@ -15,7 +15,7 @@ module TopologicalInventory
           private
 
           def process_cfme_provider_inventory(ems_type, ems_payload)
-            source_type = ems_type_to_source_type(ems_type)
+            source_type = ems_type_to_source_type[ems_type]
             source_uid  = ems_payload["guid"]
             source_name = ems_payload["name"]
 
@@ -157,25 +157,16 @@ module TopologicalInventory
             inventory
           end
 
-          def ems_type_to_source_type(ems_type)
-            case ems_type
-            when "ManageIQ::Providers::OpenStack::CloudManager"
-              "openstack"
-            when "ManageIQ::Providers::Redhat::InfraManager"
-              "rhv"
-            when "ManageIQ::Providers::Vmware::InfraManager"
-              "vsphere"
-            else
-              raise "Invalid provider type #{ems_type}"
-            end
+          def ems_type_to_source_type
+            @ems_type_to_source_type ||= {
+              "ManageIQ::Providers::OpenStack::CloudManager" => "openstack",
+              "ManageIQ::Providers::Redhat::InfraManager"    => "rhv",
+              "ManageIQ::Providers::Vmware::InfraManager"    => "vsphere"
+            }.freeze
           end
 
           def cfme_ems_types
-            [
-              "ManageIQ::Providers::OpenStack::CloudManager",
-              "ManageIQ::Providers::Redhat::InfraManager",
-              "ManageIQ::Providers::Vmware::InfraManager"
-            ]
+            ems_type_to_source_type.keys
           end
         end
       end
