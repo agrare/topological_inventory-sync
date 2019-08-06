@@ -31,7 +31,7 @@ module TopologicalInventory
 
           Payload.load(data, &:process)
 
-          logger.info("#{log_header}: Processing payload [#{payload_id}]...Complete")
+          logger.info("#{log_header}: Processing payload [#{data["payload_id"]}]...Complete")
         end
       end
     end

@@ -1,3 +1,4 @@
+require "sources-api-client"
 require "topological_inventory/sync/inventory_upload/payload/cfme"
 require "topological_inventory/sync/inventory_upload/payload/default"
 
@@ -5,6 +6,8 @@ module TopologicalInventory
   class Sync
     module InventoryUpload
       class Payload
+        include Logging
+
         class << self
           def load(message)
             account, url = message.values_at("account", "url")
