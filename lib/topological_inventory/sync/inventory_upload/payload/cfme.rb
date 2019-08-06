@@ -5,8 +5,8 @@ module TopologicalInventory
         class Cfme < Payload
           def process
             cfme_ems_types.each do |ems_type|
-              payload[ems_type].to_a.each do |ems_payload|
-                inventory = process_cfme_provider_inventory(ems_type, ems_payload)
+              payload[ems_type].to_a.each do |provider_payload|
+                inventory = provider_inventory(ems_type, provider_payload)
                 send_to_ingress_api(inventory)
               end
             end
@@ -14,10 +14,10 @@ module TopologicalInventory
 
           private
 
-          def process_cfme_provider_inventory(ems_type, ems_payload)
+          def provider_inventory(ems_type, provider_payload)
             source_type = ems_type_to_source_type[ems_type]
-            source_uid  = ems_payload["guid"]
-            source_name = ems_payload["name"]
+            source_uid  = provider_payload["guid"]
+            source_name = provider_payload["name"]
 
             find_or_create_source(source_type, source_name, source_uid)
 
@@ -31,9 +31,9 @@ module TopologicalInventory
               :collections             => [],
             )
 
-            if ems_payload["ems_clusters"].present?
+            if provider_payload["ems_clusters"].present?
               clusters_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "clusters", :data => [])
-              ems_payload["ems_clusters"].each do |cluster_data|
+              provider_payload["ems_clusters"].each do |cluster_data|
                 clusters_collection.data << TopologicalInventoryIngressApiClient::Cluster.new(
                   :name       => cluster_data["name"],
                   :source_ref => cluster_data["ems_ref"],
@@ -49,10 +49,10 @@ module TopologicalInventory
               inventory.collections << clusters_collection
             end
 
-            if ems_payload["hosts"].present?
+            if provider_payload["hosts"].present?
               hosts_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "hosts", :data => [])
 
-              ems_payload["hosts"].each do |host_data|
+              provider_payload["hosts"].each do |host_data|
                 memory_mb = host_data.dig("hardware", "memory_mb")
                 cluster_ref = host_data.dig("ems_cluster", "ems_ref")
                 cluster     = TopologicalInventoryIngressApiClient::InventoryObjectLazy.new(
@@ -83,11 +83,11 @@ module TopologicalInventory
               inventory.collections << hosts_collection
             end
 
-            if ems_payload["storages"].present?
+            if provider_payload["storages"].present?
               datastores_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "datastores", :data => [])
               datastore_mounts_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "datastore_mounts", :data => [])
 
-              ems_payload["storages"].each do |storage_data|
+              provider_payload["storages"].each do |storage_data|
                 datastore_data = {
                   :name        => storage_data["name"],
                   :location    => storage_data["location"],
@@ -124,9 +124,9 @@ module TopologicalInventory
               inventory.collections << datastore_mounts_collection
             end
 
-            if ems_payload["vms"].present?
+            if provider_payload["vms"].present?
               vms_collection = TopologicalInventoryIngressApiClient::InventoryCollection.new(:name => "vms", :data => [])
-              ems_payload["vms"].each do |vm_data|
+              provider_payload["vms"].each do |vm_data|
                 host_ref = vm_data.dig("host", "ems_ref")
                 host     = TopologicalInventoryIngressApiClient::InventoryObjectLazy.new(
                   :inventory_collection_name => "hosts", :reference => {:source_ref => host_ref}, :ref => :manager_ref
