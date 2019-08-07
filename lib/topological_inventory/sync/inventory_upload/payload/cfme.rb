@@ -6,8 +6,7 @@ module TopologicalInventory
           def process
             cfme_ems_types.each do |ems_type|
               payload[ems_type].to_a.each do |provider_payload|
-                inventory = provider_inventory(ems_type, provider_payload)
-                send_to_ingress_api(inventory)
+                provider_inventory(ems_type, provider_payload)
               end
             end
           end
@@ -19,7 +18,10 @@ module TopologicalInventory
             source_uid  = provider_payload["guid"]
             source_name = provider_payload["name"]
 
-            find_or_create_source(source_type, source_name, source_uid)
+            logger.info("Processing CFME Provider [#{source_uid}] [#{source_name}]...")
+
+            source = find_or_create_source(source_type, source_name, source_uid)
+            logger.info("Source ID [#{source.id}] Name [#{source.name}] Type [#{source_type}]")
 
             inventory = TopologicalInventoryIngressApiClient::Inventory.new(
               :source                  => source_uid,
@@ -154,7 +156,9 @@ module TopologicalInventory
               inventory.collections << vms_collection
             end
 
-            inventory
+            send_to_ingress_api(inventory)
+
+            logger.info("Processing CFME provider [#{source_uid}] [#{source_name}]...Complete")
           end
 
           def ems_type_to_source_type
