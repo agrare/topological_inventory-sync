@@ -85,9 +85,10 @@ module TopologicalInventory
         end
 
         def create_source(sources_api, source_uid, source_name, source_type)
-          logger.info("Creating source")
+          logger.info("Creating Source")
           new_source = SourcesApiClient::Source.new(:uid => source_uid, :name => source_name, :source_type_id => source_type.id)
           source, = sources_api.create_source_with_http_info(new_source)
+          logger.info("Created Source: Name [#{source_name}] UID [#{source_uid}] Type [#{source_type.name}]")
           source
         rescue SourcesApiClient::ApiError => e
           raise "Failed to create source [#{source_name}] [#{source_uid}] [#{source_type.name}]: #{e.response_body}"
