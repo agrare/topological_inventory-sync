@@ -66,35 +66,32 @@ module TopologicalInventory
 
         def find_or_create_source(source_type_name, source_name, source_uid)
           sources_api = sources_api_client(account)
-          source_type = find_source_type(source_type_name, sources_api)
+          source_type = find_source_type(sources_api, source_type_name)
+          raise "Failed to find source type [#{source_type_name}]" if source_type.nil?
 
-          sources = sources_api.list_sources({:filter => {:uid => source_uid}})
-          if sources.data.blank?
-            source = SourcesApiClient::Source.new(:uid => source_uid, :name => source_name, :source_type_id => source_type.id)
-            source, status_code, _ = sources_api.create_source_with_http_info(source)
-
-            if status_code == 201
-              logger.info("Source #{source_name}(#{source_uid}) created successfully")
-              source
-            else
-              raise "Failed to create Source #{source_name} (#{source_uid})"
-            end
-          else
-            logger.debug("Source #{source_name} (#{source_uid}) found")
-            sources.data.first
-          end
+          find_source(sources_api, source_uid) || create_source(sources_api, source_uid, source_name, source_type)
         end
 
-        def find_source_type(source_type_name, sources_api)
-          raise 'Missing Source Type name!' if source_type_name.blank?
+        def find_source_type(sources_api, source_type_name)
+          sources_api.list_source_types({:filter => {:name => source_type_name}})&.data&.first
+        rescue SourcesApiClient::ApiError => e
+          raise "Failed to find source type [#{source_type_name}]: #{e.response_body}"
+        end
 
-          response = sources_api.list_source_types({:filter => {:name => source_type_name}})
-          if response.data.blank?
-            raise "Source Type #{source_type_name} not found!"
-          else
-            logger.info("Source Type #{source_type_name} found")
-            response.data.first
-          end
+        def find_source(sources_api, source_uid)
+          sources_api.list_sources({:filter => {:uid => source_uid}})&.data&.first
+        rescue SourcesApiClient::ApiError => e
+          raise "Failed to find source [#{source_uid}]: #{e.response_body}"
+        end
+
+        def create_source(sources_api, source_uid, source_name, source_type)
+          logger.info("Creating Source")
+          new_source = SourcesApiClient::Source.new(:uid => source_uid, :name => source_name, :source_type_id => source_type.id)
+          source, = sources_api.create_source_with_http_info(new_source)
+          logger.info("Created Source: Name [#{source_name}] UID [#{source_uid}] Type [#{source_type.name}]")
+          source
+        rescue SourcesApiClient::ApiError => e
+          raise "Failed to create source [#{source_name}] [#{source_uid}] [#{source_type.name}]: #{e.response_body}"
         end
 
         def send_to_ingress_api(inventory)
