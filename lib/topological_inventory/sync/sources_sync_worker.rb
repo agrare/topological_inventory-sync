@@ -110,7 +110,7 @@ module TopologicalInventory
       end
 
       def needs_topology?(application_type)
-        topology_app_name = "/insights/platform/topological-inventory"
+        topology_app_name = "/insights/platform/topological-inventory".freeze
         application_type.name == topology_app_name || application_type.dependent_applications.include?(topology_app_name)
       end
 
