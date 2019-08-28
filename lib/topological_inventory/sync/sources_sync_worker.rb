@@ -14,10 +14,6 @@ module TopologicalInventory
         super
       end
 
-      def internal_tenant
-        "system_orchestrator"
-      end
-
       def worker_name
         "Topological Inventory Sync Worker"
       end
@@ -110,6 +106,7 @@ module TopologicalInventory
 
       def supported_application_type_ids
         @supported_application_type_ids ||= begin
+          internal_tenant = "system_orchestrator".freeze
           sources_api_client(internal_tenant).list_application_types.data.select { |at| needs_topology?(at) }.map(&:id)
         end
       end
