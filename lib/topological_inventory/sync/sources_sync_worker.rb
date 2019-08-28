@@ -9,6 +9,8 @@ module TopologicalInventory
 
       attr_reader :source_uids_by_id
 
+      TOPOLOGY_APP_NAME = "/insights/platform/topological-inventory".freeze
+
       def initialize(messaging_host, messaging_port)
         @source_uids_by_id = {}
         super
@@ -110,8 +112,7 @@ module TopologicalInventory
       end
 
       def needs_topology?(application_type)
-        topology_app_name = "/insights/platform/topological-inventory".freeze
-        application_type.name == topology_app_name || application_type.dependent_applications.include?(topology_app_name)
+        application_type.name == TOPOLOGY_APP_NAME || application_type.dependent_applications.include?(TOPOLOGY_APP_NAME)
       end
 
       def internal_tenants_url
