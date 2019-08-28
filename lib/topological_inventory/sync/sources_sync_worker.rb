@@ -36,10 +36,8 @@ module TopologicalInventory
 
           supported_applications_by_source_id = supported_applications.group_by(&:source_id)
 
-          sources         = sources_api_client(tenant).list_sources.data
-          enabled_sources = sources.select { |source| supported_applications_by_source_id[source.id].present? }
-
-          enabled_sources.each do |source|
+          sources_api_client(tenant).list_sources.data.each do |source|
+            next unless supported_applications_by_source_id[source.id].present?
             sources_by_uid[source.uid]       = source
             tenant_by_source_uid[source.uid] = tenant
           end
