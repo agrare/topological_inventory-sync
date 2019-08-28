@@ -7,6 +7,13 @@ module TopologicalInventory
     class SourcesSyncWorker < Worker
       include Logging
 
+      attr_reader :source_uids_by_id
+
+      def initialize(messaging_host, messaging_port)
+        @source_uids_by_id = {}
+        super
+      end
+
       def internal_tenant
         "system_orchestrator"
       end
@@ -74,15 +81,20 @@ module TopologicalInventory
         tenant = headers_to_account_number(message.headers)
 
         case jobtype
+        when "Source.create"
+          source_uids_by_id[payload["id"]] = payload["uid"]
         when "Application.create"
-          if supported_application_type_ids.include?(payload["application_type_id"])
-            source = sources_api_client(tenant).show_source(payload["source_id"].to_s)
-            Source.create!(:id => source.id, :uid => source.uid, :tenant => tenants_by_external_tenant(tenant))
+          source_id, application_type_id = payload.values_at("source_id", "application_type_id")
+
+          if supported_application_type_ids.include?(application_type_id.to_s)
+            source_uid = source_uids_by_id[source_id] || sources_api_client(tenant).show_source(source_id.to_s)&.uid
+            Source.create!(:id => source_id, :uid => source_uid, :tenant => tenants_by_external_tenant(tenant))
           end
         when "Application.destroy"
           Source.find_by(:id => payload["source_id"])&.destroy
         when "Source.destroy"
-          Source.find_by(:uid => payload["uid"])&.destroy
+          source_uids_by_id.delete(payload["id"])
+          Source.find_by(:id => payload["id"])&.destroy
         end
       end
 

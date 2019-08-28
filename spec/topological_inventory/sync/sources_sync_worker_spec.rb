@@ -85,7 +85,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
       context "when the source was deleted" do
         let(:event) { "Source.destroy" }
         let(:payload) do
-          {"name" => "AWS", "source_type_id" => "1", "tenant" => tenant.external_tenant, "uid" => source.uid, "id" => "1"}
+          {"name" => "AWS", "source_type_id" => "1", "tenant" => tenant.external_tenant, "uid" => source.uid, "id" => source.id}
         end
 
         it "deletes the source" do
