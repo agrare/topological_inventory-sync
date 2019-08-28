@@ -20,7 +20,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
       {"x-rh-identity" => x_rh_identity, "encoding" => "json"}
     end
 
-    context "source create event" do
+    context "Application create event" do
       let(:event) { "Application.create" }
       before do
         sources_api_client = double("SourcesApiClient::Default")
@@ -89,8 +89,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
         end
 
         it "deletes the source" do
-          sources_sync.send(:perform, message)
-          expect(Source.count).to eq(0)
+          expect { sources_sync.send(:perform, message) }.to change { Source.count }.by(-1)
         end
       end
 
@@ -101,8 +100,7 @@ RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
         end
 
         it "deletes the source" do
-          sources_sync.send(:perform, message)
-          expect(Source.count).to eq(0)
+          expect { sources_sync.send(:perform, message) }.to change { Source.count }.by(-1) 
         end
       end
     end
