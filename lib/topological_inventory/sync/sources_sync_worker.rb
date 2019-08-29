@@ -1,5 +1,6 @@
 require "rest-client"
 require "topological_inventory/sync/worker"
+require "more_core_extensions/core_ext/module/cache_with_timeout"
 require "uri"
 
 module TopologicalInventory
@@ -102,14 +103,16 @@ module TopologicalInventory
         JSON.parse(response).map { |tenant| tenant["external_tenant"] }
       end
 
-      def supported_application_type_ids
-        @supported_application_type_ids ||= begin
-          internal_tenant = "system_orchestrator".freeze
-          sources_api_client(internal_tenant).list_application_types.data.select { |at| needs_topology?(at) }.map(&:id)
-        end
+      cache_with_timeout(:supported_application_type_ids) do
+        application_types = sources_api_client("system_orchestrator").list_application_types.data
+        application_types.select { |application_type| needs_topology?(application_type) }.map(&:id)
       end
 
-      def needs_topology?(application_type)
+      def supported_application_type_ids
+        self.class.supported_application_type_ids
+      end
+
+      def self.needs_topology?(application_type)
         application_type.name == TOPOLOGY_APP_NAME || application_type.dependent_applications.include?(TOPOLOGY_APP_NAME)
       end
 

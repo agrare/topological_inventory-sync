@@ -78,18 +78,26 @@ module TopologicalInventory
         }
       end
 
-      def sources_api_client(tenant = nil)
+      def self.sources_api_client(tenant = nil)
         api_client = SourcesApiClient::ApiClient.new
         api_client.default_headers.merge!(identity_headers(tenant)) if tenant
         SourcesApiClient::DefaultApi.new(api_client)
       end
 
-      def identity_headers(tenant)
+      def sources_api_client(tenant = nil)
+        self.class.sources_api_client(tenant)
+      end
+
+      def self.identity_headers(tenant)
         {
           "x-rh-identity" => Base64.strict_encode64(
             JSON.dump({"identity" => {"account_number" => tenant}})
           )
         }
+      end
+
+      def identity_headers(tenant)
+        self.class.identity_headers(tenant)
       end
     end
   end
