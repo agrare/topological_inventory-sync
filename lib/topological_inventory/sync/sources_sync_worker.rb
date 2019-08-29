@@ -9,8 +9,6 @@ module TopologicalInventory
 
       attr_reader :source_uids_by_id
 
-      TOPOLOGY_APP_NAME = "/insights/platform/topological-inventory".freeze
-
       def initialize(messaging_host, messaging_port)
         @source_uids_by_id = {}
         super

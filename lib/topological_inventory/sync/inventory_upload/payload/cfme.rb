@@ -17,6 +17,8 @@ module TopologicalInventory
                 source = find_or_create_source(source_type, source_name, source_uid)
                 logger.info("Source ID [#{source.id}] Name [#{source.name}] Type [#{source_type}]")
 
+                find_or_create_application(source_type, source)
+
                 inventory = Parser::Cfme.parse(source_type, source_uid, source_name, provider_payload)
                 send_to_ingress_api(inventory)
 
