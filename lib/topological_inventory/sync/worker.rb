@@ -8,6 +8,8 @@ module TopologicalInventory
     class Worker
       include Logging
 
+      TOPOLOGY_APP_NAME = "/insights/platform/topological-inventory".freeze
+
       def initialize(messaging_host, messaging_port)
         self.messaging_client = nil
         self.messaging_host   = messaging_host
