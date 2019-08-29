@@ -2,46 +2,83 @@ require "topological_inventory/sync"
 require "sources-api-client"
 
 RSpec.describe TopologicalInventory::Sync::SourcesSyncWorker do
+  let(:sources_sync)       { described_class.new("localhost", "9092") }
+  let(:source)             { {"id" => "1", "uid" => SecureRandom.uuid} }
+  let(:sources_api_client) { double("SourcesApiClient::Default") }
+
+  before do
+    allow(sources_api_client).to receive(:list_application_types).and_return(
+      SourcesApiClient::ApplicationTypesCollection.new(
+        :data  => [
+          SourcesApiClient::ApplicationType.new(
+            :name                   => "/insights/platform/catalog",
+            :dependent_applications => ["/insights/platform/topological-inventory"],
+            :id                     => "1"
+          ),
+          SourcesApiClient::ApplicationType.new(
+            :name                   => "/insights/platform/cost-management",
+            :dependent_applications => [],
+            :id                     => "2"
+          ),
+          SourcesApiClient::ApplicationType.new(
+            :name                   => "/insights/platform/topological-inventory",
+            :dependent_applications => [],
+            :id                     => "3"
+          )
+        ],
+        :links => {}
+      )
+    )
+    allow(sources_api_client).to receive(:show_source).and_return(SourcesApiClient::Source.new(source))
+    allow(sources_sync).to receive(:sources_api_client).and_return(sources_api_client)
+  end
+
   context "#initial_sync" do
+    before do
+      identity = Base64.strict_encode64(
+        JSON.dump({"identity" => {"account_number" => "topological_inventory-sources_sync"}}))
+      allow(RestClient).to receive(:get)
+        .with("http://cloud.redhat.com:443/internal/v1.0/tenants", {"x-rh-identity"=> identity})
+        .and_return("[{\"external_tenant\":\"12345\"}]")
+
+      allow(sources_api_client).to receive(:list_applications).and_return(
+        SourcesApiClient::ApplicationsCollection.new(:data => applications, :links => {})
+      )
+
+      allow(sources_api_client).to receive(:list_sources).and_return(
+        SourcesApiClient::ApplicationsCollection.new(:data => sources, :links => {})
+      )
+    end
+
+    context "with a source added" do
+      let(:sources)      { [SourcesApiClient::Source.new(:id => "1", :uid => SecureRandom.uuid)] }
+      let(:applications) { [SourcesApiClient::Application.new(:source_id => "1", :application_type_id => "3")] }
+
+      it "creates a new source" do
+        expect { sources_sync.initial_sync }.to change { Source.count }.by(1)
+      end
+    end
+
+    context "with a source deleted" do
+      let(:tenant)       { Tenant.create(:external_tenant => SecureRandom.uuid) }
+      let(:source)       { Source.create!(:uid => SecureRandom.uuid, :tenant => tenant) }
+      let(:sources)      { [] }
+      let(:applications) { [] }
+
+      it "deletes the source" do
+        expect { sources_sync.initial_sync }.to change { Source.count }.by(-1)
+      end
+    end
   end
 
   context "#perform" do
-    let(:sources_sync)    { described_class.new("localhost", "9092") }
     let(:message)         { ManageIQ::Messaging::ReceivedMessage.new(nil, event, payload, headers, nil, nil) }
     let(:external_tenant) { SecureRandom.uuid }
     let(:x_rh_identity)   { Base64.strict_encode64(JSON.dump({"identity" => {"account_number" => external_tenant}})) }
-    let(:source)          { {"id" => "1", "uid" => SecureRandom.uuid} }
     let(:headers)         { {"x-rh-identity" => x_rh_identity, "encoding" => "json"} }
 
     context "Application create event" do
       let(:event) { "Application.create" }
-      before do
-        sources_api_client = double("SourcesApiClient::Default")
-        allow(sources_api_client).to receive(:list_application_types).and_return(
-          SourcesApiClient::ApplicationTypesCollection.new(
-            :data  => [
-              SourcesApiClient::ApplicationType.new(
-                :name                   => "/insights/platform/catalog",
-                :dependent_applications => ["/insights/platform/topological-inventory"],
-                :id                     => "1"
-              ),
-              SourcesApiClient::ApplicationType.new(
-                :name                   => "/insights/platform/cost-management",
-                :dependent_applications => [],
-                :id                     => "2"
-              ),
-              SourcesApiClient::ApplicationType.new(
-                :name                   => "/insights/platform/topological-inventory",
-                :dependent_applications => [],
-                :id                     => "3"
-              )
-            ],
-            :links => {}
-          )
-        )
-        allow(sources_api_client).to receive(:show_source).and_return(SourcesApiClient::Source.new(source))
-        allow(sources_sync).to receive(:sources_api_client).and_return(sources_api_client)
-      end
 
       context "with a source not enabled for topology" do
         let(:payload) do
