@@ -109,6 +109,11 @@ module TopologicalInventory
 
           logger.info("[COMPLETED] Send to Ingress API with :refresh_state_uuid => '#{inventory.refresh_state_uuid}'. Total parts: #{total_parts}")
           total_parts
+        rescue => e
+          response_body = e.response_body if e.respond_to? :response_body
+          response_headers = e.response_headers if e.respond_to? :response_headers
+          logger.error("Error when sending payload to Ingress API. Error message: #{e.message}. Body: #{response_body}. Header: #{response_headers}")
+          raise
         end
 
         def inventory_for_sweep(inventory, total_parts)
