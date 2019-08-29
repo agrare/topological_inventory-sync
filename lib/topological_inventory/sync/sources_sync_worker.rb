@@ -115,11 +115,8 @@ module TopologicalInventory
 
       def internal_tenants_url
         config = SourcesApiClient.configure
-        URI::HTTP.build(
-          :host   => config.host.split(":").first,
-          :port   => config.host.split(":").last,
-          :path   => "/internal/v1.0/tenants"
-        ).to_s
+        host, port = config.host.split(":")
+        URI::HTTP.build(:host => host, :port => port || 443, :path => "/internal/v1.0/tenants").to_s
       end
 
       def headers_to_account_number(headers)
