@@ -96,7 +96,7 @@ module TopologicalInventory
                 )
 
                 host_storages.each do |host_storage|
-                  host_ref = host_storage.dig("host", "ems_ref")
+                  host_ref = host_storage.dig("host", "ems_ref") || storage_data["ems_ref"]
                   next if host_ref.nil?
 
                   datastore_mounts_collection.data << TopologicalInventoryIngressApiClient::DatastoreMount.new(
