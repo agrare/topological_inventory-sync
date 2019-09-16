@@ -1,12 +1,14 @@
 require "sources-api-client"
 require "topological_inventory/sync/inventory_upload/payload/cfme"
 require "topological_inventory/sync/inventory_upload/payload/default"
+require "topological_inventory/sync/api_client"
 
 module TopologicalInventory
   class Sync
     module InventoryUpload
       class Payload
         include Logging
+        include ApiClient
 
         class << self
           def load(message)
@@ -176,42 +178,6 @@ module TopologicalInventory
             :client => ingress_api_client,
             :logger => logger
           )
-        end
-
-        def sources_api_client(tenant = nil)
-          api_client = SourcesApiClient::ApiClient.new
-
-          if tenant
-            api_client.default_headers.merge!(
-              {
-                "x-rh-identity" => Base64.strict_encode64(
-                  JSON.dump({"identity" => {"account_number" => tenant}})
-                )
-              }
-            )
-          end
-
-          SourcesApiClient::DefaultApi.new(api_client)
-        end
-
-        class << self
-          def topological_api_client(tenant = nil)
-            @topological_api_client ||=
-              begin
-                api_client = TopologicalInventoryApiClient::ApiClient.new
-
-                if tenant
-                  x_rh_identity = Base64.strict_encode64(JSON.dump('identity' => { 'account_number' => tenant }))
-                  api_client.default_headers.merge!('x-rh-identity' => x_rh_identity)
-                end
-
-                TopologicalInventoryApiClient::DefaultApi.new(api_client)
-              end
-          end
-        end
-
-        def topological_api_client(tenant = nil)
-          self.class.topological_api_client(tenant)
         end
 
         TIMEOUT_COUNT = 30.seconds.freeze
