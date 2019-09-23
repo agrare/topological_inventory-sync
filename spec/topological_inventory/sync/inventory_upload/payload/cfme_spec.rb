@@ -26,16 +26,18 @@ RSpec.describe TopologicalInventory::Sync::InventoryUpload::Payload::Cfme do
     end
 
     context 'check if source exists in topology inventory' do
-      let(:api_client) { payload.send(:topological_api_client) }
+      let(:topological_api_client) { double("TopologicalInventoryApiClient::Default") }
       let(:source_in_topology_inventory) { source }
 
       before do
         payload.send(:cfme_ems_types).each do |ems_type|
           cfme_inventory[ems_type].to_a.each do |provider_payload|
             guid = provider_payload['guid']
-            allow(payload).to receive(:find_source).with(api_client, guid).and_return(source_in_topology_inventory)
+            allow(payload).to receive(:find_source).with(topological_api_client, guid).and_return(source_in_topology_inventory)
           end
         end
+
+        allow(TopologicalInventory::Sync).to receive(:topological_api_client).and_return(topological_api_client)
       end
 
       it 'parses cfme inventory and sends to ingress-api when source exists in topological inventory' do
