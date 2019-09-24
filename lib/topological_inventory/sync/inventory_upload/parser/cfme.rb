@@ -91,12 +91,13 @@ module TopologicalInventory
               }
 
               storage_data["host_storages"].group_by { |hs| hs["ems_ref"] }.each do |ems_ref, host_storages|
+                ems_ref ||= storage_data["ems_ref"]
                 datastores_collection.data << TopologicalInventoryIngressApiClient::Datastore.new(
                   datastore_data.merge(:source_ref => ems_ref)
                 )
 
                 host_storages.each do |host_storage|
-                  host_ref = host_storage.dig("host", "ems_ref") || storage_data["ems_ref"]
+                  host_ref = host_storage.dig("host", "ems_ref")
                   next if host_ref.nil?
 
                   datastore_mounts_collection.data << TopologicalInventoryIngressApiClient::DatastoreMount.new(
