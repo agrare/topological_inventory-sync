@@ -14,7 +14,7 @@ module TopologicalInventory
 
                 logger.info("Processing CFME Provider [#{source_uid}] [#{source_name}]...")
 
-                source = find_or_create_source(source_type, source_name, source_uid)
+                source = find_or_create_source(:type_name => source_type, :name => source_name, :uid => source_uid)
                 logger.info("Source ID [#{source.id}] Name [#{source.name}] Type [#{source_type}]")
 
                 find_or_create_application(source_type, source)
